@@ -104,8 +104,77 @@ export function DataTable<TData, TValue>({
         {primaryAction && <div className="flex items-center gap-2">{primaryAction}</div>}
       </div>
 
-      {/* Table Content */}
-      <div className="rounded-lg border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden shadow-2xs">
+      {/* Mobile Card Grid View (Shown on mobile screens < md) */}
+      <div className="block md:hidden space-y-3">
+        {isLoading ? (
+          <LoadingState rows={4} />
+        ) : table.getRowModel().rows.length === 0 ? (
+          <EmptyState
+            title="Không tìm thấy kết quả"
+            description="Thử thay đổi từ khóa tìm kiếm hoặc bỏ bớt bộ lọc để thấy dữ liệu."
+          />
+        ) : (
+          table.getRowModel().rows.map((row) => {
+            const visibleCells = row.getVisibleCells();
+            const actionCell = visibleCells.find((c) => c.column.id === 'actions');
+            const dataCells = visibleCells.filter((c) => c.column.id !== 'actions');
+            const primaryCell = dataCells[0];
+            const secondaryCells = dataCells.slice(1);
+
+            return (
+              <div
+                key={row.id}
+                onClick={() => onRowClick && onRowClick(row.original)}
+                className={cn(
+                  'p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-800 shadow-2xs space-y-3 transition-all',
+                  onRowClick && 'cursor-pointer hover:border-slate-300 dark:hover:border-slate-700 active:scale-[0.99]'
+                )}
+              >
+                {/* Header Row: Primary Cell & Action Menu */}
+                <div className="flex items-start justify-between gap-3 pb-2.5 border-b border-slate-100 dark:border-slate-800">
+                  <div className="flex-1 min-w-0">
+                    {primaryCell && flexRender(primaryCell.column.columnDef.cell, primaryCell.getContext())}
+                  </div>
+                  {actionCell && (
+                    <div onClick={(e) => e.stopPropagation()} className="shrink-0">
+                      {flexRender(actionCell.column.columnDef.cell, actionCell.getContext())}
+                    </div>
+                  )}
+                </div>
+
+                {/* Body Grid: Key-Value Pairs */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                  {secondaryCells.map((cell) => {
+                    const headerContent = cell.column.columnDef.header;
+                    if (!headerContent) return null;
+
+                    return (
+                      <div
+                        key={cell.id}
+                        className="flex items-center justify-between py-1 px-1 rounded-md hover:bg-slate-50 dark:hover:bg-slate-800/40"
+                      >
+                        <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider shrink-0 mr-2">
+                          {typeof headerContent === 'string'
+                            ? headerContent
+                            : typeof headerContent === 'function'
+                            ? (headerContent as any)({ column: cell.column, table })
+                            : String(headerContent)}
+                        </span>
+                        <div className="text-right text-xs text-slate-700 dark:text-slate-300 font-medium truncate">
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Desktop Table View (Shown on screens >= md) */}
+      <div className="hidden md:block rounded-lg border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden shadow-2xs">
         {isLoading ? (
           <LoadingState rows={6} />
         ) : table.getRowModel().rows.length === 0 ? (
